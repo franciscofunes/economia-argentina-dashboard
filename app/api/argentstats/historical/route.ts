@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getHistoricalDollarData, getHistoricalInflationData } from '@/lib/argentstats'
+import { getHistoricalDollarData, getHistoricalInflationData } from '@/lib/argenstats'
+
+// Interfaces para TypeScript
+interface DollarHistoryPoint {
+  date: string
+  oficial: number
+  blue: number
+}
+
+interface InflationHistoryPoint {
+  month: string
+  value: number
+}
 
 export async function GET(request: NextRequest) {
   console.log('📈 Historical Data API Route - Iniciando...')
@@ -12,8 +24,8 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 Parámetros:', { type, days, months })
 
-    let dollarHistory = []
-    let inflationHistory = []
+    let dollarHistory: DollarHistoryPoint[] = []
+    let inflationHistory: InflationHistoryPoint[] = []
 
     if (type === 'dollar' || type === 'all') {
       try {
@@ -58,8 +70,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error en historical data route:', error)
     
-    // Generar datos de fallback
-    const dollarHistory = Array.from({ length: 30 }, (_, i) => {
+    // Generar datos de fallback con tipos explícitos
+    const dollarHistory: DollarHistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - (29 - i))
       
@@ -73,7 +85,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const inflationHistory = [
+    const inflationHistory: InflationHistoryPoint[] = [
       { month: 'Ene 24', value: 20.6 },
       { month: 'Feb 24', value: 13.2 },
       { month: 'Mar 24', value: 11.0 },
