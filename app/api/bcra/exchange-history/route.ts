@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+interface ExchangeDataPoint {
+  fecha: string
+  valor: number
+}
+
+interface ProcessedDataPoint {
+  date: string
+  oficial: number
+  blue: number
+}
+
 export async function GET(request: NextRequest) {
   try {
     const bcraBaseUrl = 'https://api.bcra.gob.ar/estadisticas/v3'
@@ -49,10 +60,10 @@ export async function GET(request: NextRequest) {
       throw new Error('Error al obtener datos históricos')
     }
     
-    const historicalData = await dataResponse.json()
+    const historicalData: ExchangeDataPoint[] = await dataResponse.json()
     
     // Procesar datos para el gráfico
-    const processedData = historicalData.map((item: any) => {
+    const processedData: ProcessedDataPoint[] = historicalData.map((item: ExchangeDataPoint) => {
       const oficial = item.valor
       // Simular blue basado en brecha histórica (40-50%)
       const blue = oficial * (1.4 + Math.random() * 0.1)
@@ -72,13 +83,13 @@ export async function GET(request: NextRequest) {
         blue: 1470
       }
       
-      const filledData = []
+      const filledData: ProcessedDataPoint[] = []
       for (let i = 29; i >= 0; i--) {
         const date = new Date()
         date.setDate(date.getDate() - i)
         
         // Encontrar dato real para esta fecha o interpolar
-        const existingData = processedData.find(d => d.date === date.toISOString().split('T')[0])
+        const existingData = processedData.find((d: ProcessedDataPoint) => d.date === date.toISOString().split('T')[0])
         
         if (existingData) {
           filledData.push(existingData)
@@ -116,7 +127,7 @@ export async function GET(request: NextRequest) {
     console.error('Exchange history error:', error)
     
     // Generar datos realistas como fallback
-    const mockData = []
+    const mockData: ProcessedDataPoint[] = []
     const baseRate = 1015
     
     for (let i = 29; i >= 0; i--) {
