@@ -5,7 +5,7 @@ import {
   getEMAEData,
   getRiesgoPaisData,
   getLaborMarketData
-} from '@/lib/argentstats'
+} from '@/lib/argenstats'
 
 export async function GET(request: NextRequest) {
   console.log('📊 ArgenStats API Route - Iniciando...')
