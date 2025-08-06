@@ -91,15 +91,42 @@ export default function SuperModernDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/argenstats')
+      
+      // Obtener datos actuales
+      const response = await fetch('/api/argenstats', {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       const result = await response.json()
       setData(result)
       setLastUpdate(new Date().toLocaleString('es-AR'))
+      
+      console.log('📊 Dashboard - Datos recibidos:', result)
+      console.log('📊 Metadata:', result.metadata)
 
-      // Simular datos históricos para los gráficos
-      generateHistoricalData(result)
+      // Obtener datos históricos reales
+      const historicalResponse = await fetch('/api/argenstats/historical?type=all&days=30&months=12', {
+        cache: 'no-cache'
+      })
+      const historicalResult = await historicalResponse.json()
+      
+      console.log('📈 Datos históricos recibidos:', historicalResult)
+      
+      setHistoricalData({
+        dollarHistory: historicalResult.dollarHistory || [],
+        inflationHistory: historicalResult.inflationHistory || []
+      })
+
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('❌ Error loading data:', error)
+      
+      // Fallback si falla completamente
+      generateHistoricalData({
+        exchangeRates: { oficial: 1015, blue: 1485 },
+        inflation: { monthly: 2.5 }
+      })
     } finally {
       setLoading(false)
     }
@@ -549,4 +576,4 @@ export default function SuperModernDashboard() {
       </div>
     </div>
   )
-}
+                  }
