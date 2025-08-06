@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getHistoricalDollarData, getHistoricalInflationData } from '@/lib/argenstats'
+import { getHistoricalDollarData, getHistoricalInflationData } from '@/lib/argentstats'
 
 export async function GET(request: NextRequest) {
   console.log('📈 Historical Data API Route - Iniciando...')
