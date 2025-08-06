@@ -4,7 +4,7 @@ import { DollarSign, TrendingUp, Percent, PiggyBank, RefreshCw, AlertCircle } fr
 import { useEconomicData } from '@/hooks/useEconomicData'
 
 // Importar el dashboard moderno
-import SuperModernDashboard from './SuperModernDashboard'
+import ModernDashboard from './ModernDashboard'
 
 export default function Dashboard() {
   // Por compatibilidad, mantener este componente pero usar el moderno
