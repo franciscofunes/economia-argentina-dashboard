@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   async headers() {
     return [
       {
@@ -14,6 +11,13 @@ const nextConfig = {
         ],
       },
     ]
+  },
+  // Configuración para optimizar el build
+  typescript: {
+    ignoreBuildErrors: false, // Mantener strict TypeScript
+  },
+  eslint: {
+    ignoreDuringBuilds: false, // Mantener ESLint activo
   },
 }
 
