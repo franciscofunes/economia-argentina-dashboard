@@ -5,7 +5,7 @@ import {
   getEMAEData, 
   getRiesgoPaisData, 
   getLaborMarketData 
-} from '@/lib/argenstats'
+} from '@/lib/argentstats'
 
 export async function GET(request: NextRequest) {
   try {
