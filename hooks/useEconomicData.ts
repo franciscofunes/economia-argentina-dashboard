@@ -1,23 +1,32 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { EconomicData, ApiResponse } from '@/lib/types'
+import { EconomicData } from '@/lib/types'
 
-export function useEconomicData() {
-  const [data, setData] = useState<ApiResponse<EconomicData>>({
-    data: {
-      exchangeRate: { oficial: 0, blue: 0, date: '' },
-      inflation: { monthly: 0, annual: 0, date: '' },
-      interestRate: { rate: 0, date: '' },
-      budget: { executed: 0, total: 0, percentage: 0 }
-    },
-    loading: true,
-    error: undefined
-  })
+interface UseEconomicDataReturn {
+  data: EconomicData
+  loading: boolean
+  error?: string
+  refetch: () => Promise<void>
+}
 
-  const fetchData = async () => {
+const defaultData: EconomicData = {
+  exchangeRates: { oficial: 0, blue: 0, mep: 0, ccl: 0, tarjeta: 0, date: '' },
+  inflation: { monthly: 0, annual: 0, accumulated: 0, date: '' },
+  emae: { monthly: 0, annual: 0, index: 0, date: '' },
+  riesgoPais: { value: 0, variation: 0, date: '' },
+  laborMarket: { unemployment: 0, employment: 0, activity: 0, date: '' }
+}
+
+export function useEconomicData(): UseEconomicDataReturn {
+  const [data, setData] = useState<EconomicData>(defaultData)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | undefined>(undefined)
+
+  const fetchData = async (): Promise<void> => {
     try {
-      setData(prev => ({ ...prev, loading: true, error: undefined }))
+      setLoading(true)
+      setError(undefined)
       
       // Llamadas paralelas a las APIs
       const [bcraResponse, seriesResponse, budgetResponse] = await Promise.allSettled([
@@ -31,38 +40,46 @@ export function useEconomicData() {
       const budgetData = budgetResponse.status === 'fulfilled' ? await budgetResponse.value.json() : null
 
       const economicData: EconomicData = {
-        exchangeRate: {
+        exchangeRates: {
           oficial: bcraData?.exchangeRate?.oficial || 0,
           blue: bcraData?.exchangeRate?.blue || 0,
+          mep: bcraData?.exchangeRate?.mep || 0,
+          ccl: bcraData?.exchangeRate?.ccl || 0,
+          tarjeta: bcraData?.exchangeRate?.tarjeta || 0,
           date: bcraData?.exchangeRate?.date || new Date().toISOString()
         },
         inflation: {
           monthly: seriesData?.inflation?.monthly || 0,
           annual: seriesData?.inflation?.annual || 0,
+          accumulated: seriesData?.inflation?.accumulated || 0,
           date: seriesData?.inflation?.date || new Date().toISOString()
         },
-        interestRate: {
-          rate: bcraData?.interestRate?.rate || 0,
-          date: bcraData?.interestRate?.date || new Date().toISOString()
+        emae: {
+          monthly: bcraData?.emae?.monthly || 0,
+          annual: bcraData?.emae?.annual || 0,
+          index: bcraData?.emae?.index || 0,
+          date: bcraData?.emae?.date || new Date().toISOString()
         },
-        budget: {
-          executed: budgetData?.executed || 0,
-          total: budgetData?.total || 0,
-          percentage: budgetData?.percentage || 0
+        riesgoPais: {
+          value: bcraData?.riesgoPais?.value || 0,
+          variation: bcraData?.riesgoPais?.variation || 0,
+          date: bcraData?.riesgoPais?.date || new Date().toISOString()
+        },
+        laborMarket: {
+          unemployment: bcraData?.laborMarket?.unemployment || 0,
+          employment: bcraData?.laborMarket?.employment || 0,
+          activity: bcraData?.laborMarket?.activity || 0,
+          date: bcraData?.laborMarket?.date || new Date().toISOString()
         }
       }
 
-      setData({
-        data: economicData,
-        loading: false,
-        error: undefined
-      })
-    } catch (error) {
-      setData(prev => ({
-        ...prev,
-        loading: false,
-        error: 'Error al cargar los datos económicos'
-      }))
+      setData(economicData)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al cargar los datos económicos'
+      setError(errorMessage)
+      console.error('Error in useEconomicData:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -70,9 +87,17 @@ export function useEconomicData() {
     fetchData()
 
     // Actualizar datos cada 5 minutos
-    const interval = setInterval(fetchData, 5 * 60 * 1000)
+    const interval = setInterval(() => {
+      fetchData().catch(console.error)
+    }, 5 * 60 * 1000)
+    
     return () => clearInterval(interval)
   }, [])
 
-  return { ...data, refetch: fetchData }
-            }
+  return { 
+    data, 
+    loading, 
+    error, 
+    refetch: fetchData 
+  }
+}
