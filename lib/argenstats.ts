@@ -1,7 +1,15 @@
-// Let's create a very simple version that actually works
-// Replace your /lib/argenstats.ts with this version
+// TypeScript-safe version of /lib/argenstats.ts
+// All error handling is now properly typed
 
 const ARGENSTATS_BASE_URL = 'https://argenstats.com/api'
+
+// Helper function to safely get error message
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return String(error)
+}
 
 // Simple fetch function with better error handling
 const simpleFetch = async (endpoint: string): Promise<any> => {
@@ -15,7 +23,6 @@ const simpleFetch = async (endpoint: string): Promise<any> => {
         'Accept': 'application/json',
         'User-Agent': 'Dashboard-Argentina/1.0'
       },
-      // Remove cache settings that might cause issues
       cache: 'default'
     })
     
@@ -44,7 +51,6 @@ export async function testArgenStatsAPI() {
   try {
     console.log('🧪 Testing ArgenStats API endpoints...')
     
-    // Test each endpoint individually
     const tests = [
       { name: 'Dollar', endpoint: '/dollar' },
       { name: 'IPC', endpoint: '/ipc' },
@@ -58,11 +64,11 @@ export async function testArgenStatsAPI() {
         const result = await simpleFetch(test.endpoint)
         console.log(`✅ ${test.name} SUCCESS:`, result)
       } catch (error) {
-        console.log(`❌ ${test.name} FAILED:`, error)
+        console.log(`❌ ${test.name} FAILED:`, getErrorMessage(error))
       }
     }
   } catch (error) {
-    console.error('❌ API Test failed:', error)
+    console.error('❌ API Test failed:', getErrorMessage(error))
   }
 }
 
@@ -124,7 +130,7 @@ export async function getDollarRates() {
     return result
     
   } catch (error) {
-    console.error('❌ Dollar rates error:', error)
+    console.error('❌ Dollar rates error:', getErrorMessage(error))
     return {
       data: [{
         date: new Date().toISOString(),
@@ -136,7 +142,7 @@ export async function getDollarRates() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: error.message
+        error: getErrorMessage(error)
       }
     }
   }
@@ -184,7 +190,7 @@ export async function getInflationData() {
     return result
     
   } catch (error) {
-    console.error('❌ IPC error:', error)
+    console.error('❌ IPC error:', getErrorMessage(error))
     return {
       data: [{
         date: new Date().toISOString(),
@@ -195,7 +201,7 @@ export async function getInflationData() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: error.message
+        error: getErrorMessage(error)
       }
     }
   }
@@ -226,7 +232,7 @@ export async function getEMAEData() {
     return result
     
   } catch (error) {
-    console.error('❌ EMAE error:', error)
+    console.error('❌ EMAE error:', getErrorMessage(error))
     return {
       data: [{
         date: new Date().toISOString(),
@@ -236,7 +242,7 @@ export async function getEMAEData() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: error.message
+        error: getErrorMessage(error)
       }
     }
   }
@@ -278,7 +284,7 @@ export async function getRiesgoPaisData() {
     return result
     
   } catch (error) {
-    console.error('❌ Riesgo País error:', error)
+    console.error('❌ Riesgo País error:', getErrorMessage(error))
     return {
       data: [{
         date: new Date().toISOString(),
@@ -287,7 +293,7 @@ export async function getRiesgoPaisData() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: error.message
+        error: getErrorMessage(error)
       }
     }
   }
@@ -315,7 +321,7 @@ export async function getLaborMarketData() {
     }
     
   } catch (error) {
-    console.error('❌ Labor market error:', error)
+    console.error('❌ Labor market error:', getErrorMessage(error))
     return {
       data: [{
         date: new Date().toISOString(),
@@ -325,7 +331,7 @@ export async function getLaborMarketData() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: error.message
+        error: getErrorMessage(error)
       }
     }
   }
@@ -333,7 +339,6 @@ export async function getLaborMarketData() {
 
 // Historical dollar data - simplified
 export async function getHistoricalDollarData(days = 30) {
-  // For now, generate realistic data based on current rates
   try {
     const current = await getDollarRates()
     const baseOficial = current.data[0].oficial
@@ -359,12 +364,12 @@ export async function getHistoricalDollarData(days = 30) {
       }
     }
   } catch (error) {
-    console.error('❌ Historical dollar error:', error)
+    console.error('❌ Historical dollar error:', getErrorMessage(error))
     return {
       data: [],
       metadata: {
         source: 'Error',
-        error: error.message
+        error: getErrorMessage(error)
       }
     }
   }
