@@ -34,7 +34,11 @@ export async function GET(request: NextRequest) {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'Dashboard-Argentina-Debug/1.0'
+          'User-Agent': 'Dashboard-Argentina-Debug/1.0',
+          // Add API key if available
+          ...(process.env.ARGENSTATS_API_KEY && {
+            'x-api-key': process.env.ARGENSTATS_API_KEY
+          })
         }
       })
       
@@ -71,7 +75,9 @@ export async function GET(request: NextRequest) {
     total: results.tests.length,
     successful: results.tests.filter((t: any) => t.success).length,
     failed: results.tests.filter((t: any) => !t.success).length,
-    avgResponseTime: results.tests.reduce((sum: number, t: any) => sum + (t.timing || 0), 0) / results.tests.length
+    avgResponseTime: results.tests.reduce((sum: number, t: any) => sum + (t.timing || 0), 0) / results.tests.length,
+    api_key_available: !!process.env.ARGENSTATS_API_KEY,
+    api_key_used: !!process.env.ARGENSTATS_API_KEY
   }
   
   return NextResponse.json(results, {
