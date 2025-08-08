@@ -34,7 +34,7 @@ const apiRequest = async (endpoint: string, params?: Record<string, any>) => {
       }
     }
 
-    console.log('ArgenStats API Request:', url)
+    console.log('🔗 ArgenStats API Request:', url)
 
     const response = await fetch(url, {
       method: 'GET',
@@ -42,25 +42,26 @@ const apiRequest = async (endpoint: string, params?: Record<string, any>) => {
       cache: 'no-cache'
     })
 
-    console.log('ArgenStats Response Status:', response.status)
+    console.log('📡 ArgenStats Response Status:', response.status)
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} - ${response.statusText}`)
     }
 
     const data = await response.json()
-    console.log('ArgenStats Data:', data)
+    console.log('✅ ArgenStats Data received:', data)
     
     return data
   } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error)
+    console.error(`❌ Error fetching ${endpoint}:`, error)
     throw error
   }
 }
 
-// API Functions actualizadas según la documentación
+// API Functions actualizadas según la documentación real de ArgenStats
 export async function getDollarRates() {
   try {
+    console.log('💰 Fetching dollar rates...')
     const response = await apiRequest('/dollar', { type: 'latest' })
     
     // Procesar la respuesta según la estructura real de ArgenStats
@@ -72,6 +73,8 @@ export async function getDollarRates() {
       rates.forEach((rate: any) => {
         ratesMap[rate.dollar_type] = rate
       })
+      
+      console.log('💰 Dollar rates processed:', Object.keys(ratesMap))
       
       return {
         data: [{
@@ -96,9 +99,9 @@ export async function getDollarRates() {
       }
     }
     
-    throw new Error('Invalid response structure')
+    throw new Error('Invalid response structure from ArgenStats')
   } catch (error) {
-    console.error('Error fetching dollar rates:', error)
+    console.error('❌ Error fetching dollar rates:', error)
     // Fallback con datos realistas
     return {
       data: [{
@@ -111,7 +114,7 @@ export async function getDollarRates() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: 'API unavailable'
+        error: 'ArgenStats API unavailable'
       }
     }
   }
@@ -119,6 +122,7 @@ export async function getDollarRates() {
 
 export async function getInflationData(year?: number) {
   try {
+    console.log('📈 Fetching inflation data...')
     const params = { 
       type: 'latest',
       category: 'GENERAL',
@@ -129,6 +133,8 @@ export async function getInflationData(year?: number) {
     
     if (response.success && response.data && response.data.length > 0) {
       const latestData = response.data[0]
+      
+      console.log('📈 Inflation data processed:', latestData)
       
       return {
         data: [{
@@ -148,9 +154,9 @@ export async function getInflationData(year?: number) {
       }
     }
     
-    throw new Error('Invalid IPC response')
+    throw new Error('Invalid IPC response from ArgenStats')
   } catch (error) {
-    console.error('Error fetching IPC data:', error)
+    console.error('❌ Error fetching IPC data:', error)
     // Fallback con datos realistas
     return {
       data: [{
@@ -161,7 +167,7 @@ export async function getInflationData(year?: number) {
       }],
       metadata: {
         source: 'Fallback data',
-        error: 'API unavailable'
+        error: 'ArgenStats API unavailable'
       }
     }
   }
@@ -169,9 +175,12 @@ export async function getInflationData(year?: number) {
 
 export async function getEMAEData(year?: number) {
   try {
+    console.log('⚡ Fetching EMAE data...')
     const response = await apiRequest('/emae/latest')
     
     if (response && response.original_value !== undefined) {
+      console.log('⚡ EMAE data processed:', response)
+      
       return {
         data: [{
           date: response.date,
@@ -190,9 +199,9 @@ export async function getEMAEData(year?: number) {
       }
     }
     
-    throw new Error('Invalid EMAE response')
+    throw new Error('Invalid EMAE response from ArgenStats')
   } catch (error) {
-    console.error('Error fetching EMAE data:', error)
+    console.error('❌ Error fetching EMAE data:', error)
     // Fallback con datos realistas
     return {
       data: [{
@@ -203,7 +212,7 @@ export async function getEMAEData(year?: number) {
       }],
       metadata: {
         source: 'Fallback data',
-        error: 'API unavailable'
+        error: 'ArgenStats API unavailable'
       }
     }
   }
@@ -211,10 +220,13 @@ export async function getEMAEData(year?: number) {
 
 export async function getRiesgoPaisData() {
   try {
+    console.log('🚨 Fetching riesgo país data...')
     const response = await apiRequest('/riesgo-pais', { type: 'latest' })
     
     if (response.success && response.data && response.data.length > 0) {
       const latestData = response.data[0]
+      
+      console.log('🚨 Riesgo país data processed:', latestData)
       
       return {
         data: [{
@@ -233,9 +245,9 @@ export async function getRiesgoPaisData() {
       }
     }
     
-    throw new Error('Invalid Riesgo País response')
+    throw new Error('Invalid Riesgo País response from ArgenStats')
   } catch (error) {
-    console.error('Error fetching riesgo país data:', error)
+    console.error('❌ Error fetching riesgo país data:', error)
     // Fallback con datos realistas
     return {
       data: [{
@@ -245,7 +257,7 @@ export async function getRiesgoPaisData() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: 'API unavailable'
+        error: 'ArgenStats API unavailable'
       }
     }
   }
@@ -253,6 +265,7 @@ export async function getRiesgoPaisData() {
 
 export async function getLaborMarketData() {
   try {
+    console.log('👥 Fetching labor market data...')
     const response = await apiRequest('/labor-market', { 
       view: 'latest',
       data_type: 'national'
@@ -260,6 +273,8 @@ export async function getLaborMarketData() {
     
     if (response.success && response.data && response.data.national) {
       const nationalData = response.data.national[0]
+      
+      console.log('👥 Labor market data processed:', nationalData)
       
       return {
         data: [{
@@ -280,9 +295,9 @@ export async function getLaborMarketData() {
       }
     }
     
-    throw new Error('Invalid Labor Market response')
+    throw new Error('Invalid Labor Market response from ArgenStats')
   } catch (error) {
-    console.error('Error fetching labor market data:', error)
+    console.error('❌ Error fetching labor market data:', error)
     // Fallback con datos realistas
     return {
       data: [{
@@ -293,93 +308,7 @@ export async function getLaborMarketData() {
       }],
       metadata: {
         source: 'Fallback data',
-        error: 'API unavailable'
-      }
-    }
-  }
-}
-
-export async function getPovertyData() {
-  try {
-    const response = await apiRequest('/poverty/latest', {
-      data_type: 'both'
-    })
-    
-    if (response.success && response.data && response.data.length > 0) {
-      const latestData = response.data[0]
-      
-      return {
-        data: [{
-          period: latestData.time_period,
-          region: latestData.region,
-          poverty_rate: latestData.poverty_rate,
-          indigence_rate: latestData.indigence_rate,
-          poverty_change: latestData.poverty_change,
-          indigence_change: latestData.indigence_change,
-          population_total: latestData.population_total,
-          poor_population: latestData.poor_population,
-          indigent_population: latestData.indigent_population
-        }],
-        metadata: {
-          source: 'ArgenStats API - Poverty',
-          timestamp: new Date().toISOString(),
-          raw_response: response
-        }
-      }
-    }
-    
-    throw new Error('Invalid Poverty response')
-  } catch (error) {
-    console.error('Error fetching poverty data:', error)
-    return {
-      data: [{
-        period: '2024-S1',
-        region: 'Total aglomerados urbanos',
-        poverty_rate: 38.9,
-        indigence_rate: 8.8
-      }],
-      metadata: {
-        source: 'Fallback data',
-        error: 'API unavailable'
-      }
-    }
-  }
-}
-
-export async function getCalendarData(month?: number, year?: number) {
-  try {
-    const params: Record<string, any> = {}
-    if (month) params.month = month
-    if (year) params.year = year
-    
-    const response = await apiRequest('/calendar', params)
-    
-    if (response.data && Array.isArray(response.data)) {
-      return {
-        data: response.data.map((event: any) => ({
-          date: event.date,
-          day_week: event.day_week,
-          indicator: event.indicator,
-          period: event.period,
-          source: event.source
-        })),
-        metadata: {
-          source: 'ArgenStats API - Calendar',
-          count: response.metadata?.count || response.data.length,
-          timestamp: new Date().toISOString(),
-          raw_response: response
-        }
-      }
-    }
-    
-    throw new Error('Invalid Calendar response')
-  } catch (error) {
-    console.error('Error fetching calendar data:', error)
-    return {
-      data: [],
-      metadata: {
-        source: 'Fallback data',
-        error: 'API unavailable'
+        error: 'ArgenStats API unavailable'
       }
     }
   }
@@ -388,6 +317,7 @@ export async function getCalendarData(month?: number, year?: number) {
 // Función para obtener datos históricos del dólar
 export async function getHistoricalDollarData(days = 30) {
   try {
+    console.log(`📊 Fetching historical dollar data for ${days} days...`)
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
@@ -402,6 +332,8 @@ export async function getHistoricalDollarData(days = 30) {
     })
     
     if (response.success && response.data) {
+      console.log(`📊 Historical dollar data received: ${response.data.length} records`)
+      
       // Agrupar por fecha
       const dataByDate: Record<string, any> = {}
       
@@ -426,6 +358,8 @@ export async function getHistoricalDollarData(days = 30) {
           blue: Math.round(item.blue * 100) / 100
         }))
       
+      console.log(`📊 Processed ${historicalData.length} historical dollar points`)
+      
       return {
         data: historicalData,
         metadata: {
@@ -436,11 +370,12 @@ export async function getHistoricalDollarData(days = 30) {
       }
     }
     
-    throw new Error('Invalid historical dollar response')
+    throw new Error('Invalid historical dollar response from ArgenStats')
   } catch (error) {
-    console.error('Error fetching historical dollar data:', error)
+    console.error('❌ Error fetching historical dollar data:', error)
     
     // Generar datos sintéticos basados en datos actuales
+    console.log('🔄 Generating fallback historical dollar data...')
     const currentData = await getDollarRates()
     const baseOficial = currentData.data[0]?.oficial || 1015
     const baseBlue = currentData.data[0]?.blue || 1485
@@ -473,6 +408,7 @@ export async function getHistoricalDollarData(days = 30) {
 
 export async function getHistoricalInflationData(months = 12) {
   try {
+    console.log(`📈 Fetching historical inflation data for ${months} months...`)
     const response = await apiRequest('/ipc', {
       type: 'historical',
       category: 'GENERAL',
@@ -482,6 +418,8 @@ export async function getHistoricalInflationData(months = 12) {
     })
     
     if (response.success && response.data) {
+      console.log(`📈 Historical inflation data received: ${response.data.length} records`)
+      
       const historicalData = response.data
         .slice(0, months)
         .reverse() // Mostrar del más antiguo al más reciente
@@ -497,6 +435,8 @@ export async function getHistoricalInflationData(months = 12) {
           }
         })
       
+      console.log(`📈 Processed ${historicalData.length} historical inflation points`)
+      
       return {
         data: historicalData,
         metadata: {
@@ -507,11 +447,12 @@ export async function getHistoricalInflationData(months = 12) {
       }
     }
     
-    throw new Error('Invalid historical inflation response')
+    throw new Error('Invalid historical inflation response from ArgenStats')
   } catch (error) {
-    console.error('Error getting historical inflation:', error)
+    console.error('❌ Error getting historical inflation:', error)
     
     // Datos realistas de inflación 2024
+    console.log('🔄 Using fallback inflation data...')
     const inflationData = [
       { month: 'Ene 24', value: 20.6 },
       { month: 'Feb 24', value: 13.2 },
@@ -540,14 +481,19 @@ export async function getHistoricalInflationData(months = 12) {
 // Función utilitaria para obtener todos los indicadores principales
 export async function getAllMainIndicators() {
   try {
+    console.log('🔄 Fetching all main indicators...')
     const results = await Promise.allSettled([
       getDollarRates(),
       getInflationData(),
       getEMAEData(),
       getRiesgoPaisData(),
-      getLaborMarketData(),
-      getPovertyData()
+      getLaborMarketData()
     ])
+    
+    const successful = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.filter(r => r.status === 'rejected').length
+    
+    console.log(`✅ Main indicators fetch complete: ${successful} success, ${failed} failed`)
     
     return {
       dollar: results[0].status === 'fulfilled' ? results[0].value : null,
@@ -555,15 +501,14 @@ export async function getAllMainIndicators() {
       emae: results[2].status === 'fulfilled' ? results[2].value : null,
       riesgoPais: results[3].status === 'fulfilled' ? results[3].value : null,
       laborMarket: results[4].status === 'fulfilled' ? results[4].value : null,
-      poverty: results[5].status === 'fulfilled' ? results[5].value : null,
       metadata: {
-        successful_calls: results.filter(r => r.status === 'fulfilled').length,
-        failed_calls: results.filter(r => r.status === 'rejected').length,
+        successful_calls: successful,
+        failed_calls: failed,
         timestamp: new Date().toISOString()
       }
     }
   } catch (error) {
-    console.error('Error fetching all indicators:', error)
+    console.error('❌ Error fetching all indicators:', error)
     throw error
   }
-        }
+                            }
