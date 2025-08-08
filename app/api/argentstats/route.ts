@@ -1,6 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllMainIndicators } from '@/lib/argenstats'
 
+// Add TypeScript interfaces to fix the compilation errors
+interface DollarData {
+  oficial?: number
+  blue?: number
+  mep?: number
+  ccl?: number
+  tarjeta?: number
+  date?: string
+  oficial_variation?: number
+  blue_variation?: number
+  mep_variation?: number
+  ccl_variation?: number
+  tarjeta_variation?: number
+}
+
+interface InflationData {
+  monthly_variation?: number
+  annual_variation?: number
+  accumulated_variation?: number
+  index_value?: number
+  category?: string
+  region?: string
+  date?: string
+}
+
+interface EmaeData {
+  monthly_variation?: number
+  annual_variation?: number
+  index_value?: number
+  seasonally_adjusted?: number
+  trend_cycle?: number
+  sector?: string
+  date?: string
+}
+
+interface RiesgoPaisData {
+  value?: number
+  variation?: number
+  variation_pct?: number
+  monthly_change?: number
+  yearly_change?: number
+  date?: string
+}
+
+interface LaborData {
+  unemployment_rate?: number
+  employment_rate?: number
+  activity_rate?: number
+  unemployment_change?: number
+  employment_change?: number
+  activity_change?: number
+  data_type?: string
+  date?: string
+}
+
 export async function GET(request: NextRequest) {
   console.log('📊 ArgenStats Main API Route - Starting...')
   
@@ -18,18 +73,37 @@ export async function GET(request: NextRequest) {
       failed: allData.metadata.failed_calls
     })
 
-    // Extraer datos con manejo seguro de propiedades
-    const dollarData = allData.dollar?.data?.[0] || {}
-    const ipcData = allData.inflation?.data?.[0] || {}
-    const emaeData = allData.emae?.data?.[0] || {}
-    const riesgoPaisData = allData.riesgoPais?.data?.[0] || {}
-    const laborData = allData.laborMarket?.data?.[0] || {}
+    // Extraer datos con tipos explícitos y manejo seguro de propiedades
+    const dollarData: DollarData = (allData.dollar?.data?.[0] as DollarData) || {}
+    const ipcData: InflationData = (allData.inflation?.data?.[0] as InflationData) || {}
+    const emaeData: EmaeData = (allData.emae?.data?.[0] as EmaeData) || {}
+    const riesgoPaisData: RiesgoPaisData = (allData.riesgoPais?.data?.[0] as RiesgoPaisData) || {}
+    const laborData: LaborData = (allData.laborMarket?.data?.[0] as LaborData) || {}
 
-    console.log('💰 Dollar Data:', { oficial: dollarData.oficial, blue: dollarData.blue })
-    console.log('📈 IPC Data:', { monthly: ipcData.monthly_variation, annual: ipcData.annual_variation })
-    console.log('⚡ EMAE Data:', { annual: emaeData.annual_variation, index: emaeData.index_value })
-    console.log('🚨 Riesgo País:', { value: riesgoPaisData.value, variation: riesgoPaisData.variation })
-    console.log('👥 Labor Data:', { unemployment: laborData.unemployment_rate })
+    console.log('💰 Dollar Data:', { 
+      oficial: dollarData.oficial, 
+      blue: dollarData.blue,
+      hasData: !!dollarData.oficial 
+    })
+    console.log('📈 IPC Data:', { 
+      monthly: ipcData.monthly_variation, 
+      annual: ipcData.annual_variation,
+      hasData: !!ipcData.monthly_variation 
+    })
+    console.log('⚡ EMAE Data:', { 
+      annual: emaeData.annual_variation, 
+      index: emaeData.index_value,
+      hasData: !!emaeData.index_value 
+    })
+    console.log('🚨 Riesgo País:', { 
+      value: riesgoPaisData.value, 
+      variation: riesgoPaisData.variation,
+      hasData: !!riesgoPaisData.value 
+    })
+    console.log('👥 Labor Data:', { 
+      unemployment: laborData.unemployment_rate,
+      hasData: !!laborData.unemployment_rate 
+    })
 
     // Construir respuesta estructurada
     const response = {
