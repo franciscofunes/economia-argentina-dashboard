@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Create this file: /app/api/argentstats/debug/route.ts
-// This will help us see what's actually happening with the API
+// Fixed TypeScript errors
 
 export async function GET(request: NextRequest) {
   const results: any = {
@@ -35,8 +35,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'Dashboard-Argentina-Debug/1.0'
-        },
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        }
       })
       
       test.timing = Date.now() - startTime
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
           test.success = true
         } catch (parseError) {
           test.error = 'Invalid JSON response'
-          test.parseError = parseError.message
+          test.parseError = parseError instanceof Error ? parseError.message : String(parseError)
         }
       } else {
         test.error = `HTTP ${response.status}: ${response.statusText}`
@@ -59,9 +58,9 @@ export async function GET(request: NextRequest) {
       }
       
     } catch (error) {
-      test.error = error.message
+      test.error = error instanceof Error ? error.message : String(error)
       test.success = false
-      test.timing = Date.now() - (test.startTime || Date.now())
+      test.timing = 0
     }
     
     results.tests.push(test)
