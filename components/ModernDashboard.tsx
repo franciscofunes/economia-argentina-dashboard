@@ -396,7 +396,12 @@ export default function FixedDashboard() {
             <div className="flex items-center">
               <h3 className="text-white/70 text-sm font-medium">{title}</h3>
               {isRealData && (
-                <CheckCircle className="w-4 h-4 ml-2 text-green-400" title="Datos reales de ArgenStats" />
+                <div className="ml-2 relative group">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Datos reales de ArgenStats
+                  </div>
+                </div>
               )}
             </div>
             <div className={`p-3 rounded-2xl bg-gradient-to-br ${colorClasses[color]} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
@@ -718,4 +723,3 @@ export default function FixedDashboard() {
     </div>
   )
 }
-   
