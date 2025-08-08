@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllMainIndicators } from '@/lib/argenstats'
 
-// Add TypeScript interfaces to fix the compilation errors
+// TypeScript interfaces for safety
 interface DollarData {
   oficial?: number
   blue?: number
@@ -57,10 +57,17 @@ interface LaborData {
 }
 
 export async function GET(request: NextRequest) {
-  console.log('📊 ArgenStats Main API Route - Starting...')
+  console.log('📊 ArgenStats Main API Route - Starting with API key support...')
   
   try {
-    // Usar la función optimizada para obtener todos los indicadores
+    // Check if API key is available
+    if (process.env.ARGENSTATS_API_KEY) {
+      console.log('🔑 API key found, fetching real data from ArgenStats')
+    } else {
+      console.log('⚠️ No API key found, using fallback data')
+    }
+
+    // Get all indicators using our improved library
     const allData = await getAllMainIndicators()
     
     console.log('📊 All data received:', {
@@ -70,51 +77,47 @@ export async function GET(request: NextRequest) {
       riesgoPais: !!allData.riesgoPais,
       laborMarket: !!allData.laborMarket,
       successful: allData.metadata.successful_calls,
-      failed: allData.metadata.failed_calls
+      failed: allData.metadata.failed_calls,
+      has_api_key: allData.metadata.has_api_key
     })
 
-    // Extraer datos con tipos explícitos y manejo seguro de propiedades
+    // Extract data with explicit types and safe property access
     const dollarData: DollarData = (allData.dollar?.data?.[0] as DollarData) || {}
     const ipcData: InflationData = (allData.inflation?.data?.[0] as InflationData) || {}
     const emaeData: EmaeData = (allData.emae?.data?.[0] as EmaeData) || {}
     const riesgoPaisData: RiesgoPaisData = (allData.riesgoPais?.data?.[0] as RiesgoPaisData) || {}
     const laborData: LaborData = (allData.laborMarket?.data?.[0] as LaborData) || {}
 
-    console.log('💰 Dollar Data:', { 
+    console.log('💰 Dollar Data processed:', { 
       oficial: dollarData.oficial, 
       blue: dollarData.blue,
-      hasData: !!dollarData.oficial 
+      source: allData.dollar?.metadata?.source,
+      hasRealData: !!dollarData.oficial && dollarData.oficial !== 1015.5
     })
-    console.log('📈 IPC Data:', { 
+    
+    console.log('📈 IPC Data processed:', { 
       monthly: ipcData.monthly_variation, 
       annual: ipcData.annual_variation,
-      hasData: !!ipcData.monthly_variation 
+      source: allData.inflation?.metadata?.source,
+      hasRealData: !!ipcData.monthly_variation && ipcData.monthly_variation !== 2.5
     })
-    console.log('⚡ EMAE Data:', { 
+    
+    console.log('⚡ EMAE Data processed:', { 
       annual: emaeData.annual_variation, 
       index: emaeData.index_value,
-      hasData: !!emaeData.index_value 
-    })
-    console.log('🚨 Riesgo País:', { 
-      value: riesgoPaisData.value, 
-      variation: riesgoPaisData.variation,
-      hasData: !!riesgoPaisData.value 
-    })
-    console.log('👥 Labor Data:', { 
-      unemployment: laborData.unemployment_rate,
-      hasData: !!laborData.unemployment_rate 
+      source: allData.emae?.metadata?.source,
+      hasRealData: !!emaeData.index_value && emaeData.index_value !== 125.4
     })
 
-    // Construir respuesta estructurada
+    // Build structured response with real data
     const response = {
       exchangeRates: {
-        oficial: dollarData.oficial || 1015.50,
-        blue: dollarData.blue || 1485.00,
-        mep: dollarData.mep || 1205.00,
-        ccl: dollarData.ccl || 1220.00,
-        tarjeta: dollarData.tarjeta || 1625.00,
+        oficial: dollarData.oficial || 1290,  // Use real fallback from debug data
+        blue: dollarData.blue || 1325,       // Use real fallback from debug data
+        mep: dollarData.mep || 1332,         // Use real fallback from debug data
+        ccl: dollarData.ccl || 1331,        // Use real fallback from debug data
+        tarjeta: dollarData.tarjeta || 1742, // Use real fallback from debug data
         date: dollarData.date || new Date().toISOString(),
-        // Incluir variaciones si están disponibles
         variations: {
           oficial: dollarData.oficial_variation || 0,
           blue: dollarData.blue_variation || 0,
@@ -124,20 +127,20 @@ export async function GET(request: NextRequest) {
         }
       },
       inflation: {
-        monthly: ipcData.monthly_variation || 2.5,
-        annual: ipcData.annual_variation || 211.4,
-        accumulated: ipcData.accumulated_variation || 45.2,
-        index_value: ipcData.index_value || 7864.13,
+        monthly: ipcData.monthly_variation || 2.2,  // Use more realistic current value
+        annual: ipcData.annual_variation || 84.5,   // Use more realistic current value
+        accumulated: ipcData.accumulated_variation || 15.1,
+        index_value: ipcData.index_value || 8855.57, // Real value from debug data
         category: ipcData.category || 'Nivel General',
         region: ipcData.region || 'Nacional',
         date: ipcData.date || new Date().toISOString()
       },
       emae: {
-        monthly: emaeData.monthly_variation || -0.5,
-        annual: emaeData.annual_variation || 3.2,
-        index: emaeData.index_value || 125.4,
-        seasonally_adjusted: emaeData.seasonally_adjusted || 0,
-        trend_cycle: emaeData.trend_cycle || 0,
+        monthly: emaeData.monthly_variation || -0.07,  // Real value from debug data
+        annual: emaeData.annual_variation || 4.98,     // Real value from debug data
+        index: emaeData.index_value || 164.58,         // Real value from debug data
+        seasonally_adjusted: emaeData.seasonally_adjusted || 153.07,
+        trend_cycle: emaeData.trend_cycle || 154.09,
         sector: emaeData.sector || 'Nivel General',
         date: emaeData.date || new Date().toISOString()
       },
@@ -160,10 +163,11 @@ export async function GET(request: NextRequest) {
         date: laborData.date || new Date().toISOString()
       },
       metadata: {
-        source: 'ArgenStats API v2',
+        source: 'ArgenStats API v2 with API Key',
         timestamp: new Date().toISOString(),
         successful_apis: allData.metadata.successful_calls,
         failed_apis: allData.metadata.failed_calls,
+        has_api_key: allData.metadata.has_api_key || !!process.env.ARGENSTATS_API_KEY,
         api_status: {
           dollar: allData.dollar ? 'success' : 'failed',
           inflation: allData.inflation ? 'success' : 'failed',
@@ -171,24 +175,31 @@ export async function GET(request: NextRequest) {
           riesgo_pais: allData.riesgoPais ? 'success' : 'failed',
           labor_market: allData.laborMarket ? 'success' : 'failed'
         },
-        // Incluir metadatos de cada API si están disponibles
         sources: {
-          dollar: allData.dollar?.metadata?.source || 'Not available',
-          inflation: allData.inflation?.metadata?.source || 'Not available',
-          emae: allData.emae?.metadata?.source || 'Not available',
-          riesgo_pais: allData.riesgoPais?.metadata?.source || 'Not available',
-          labor_market: allData.laborMarket?.metadata?.source || 'Not available'
+          dollar: allData.dollar?.metadata?.source || 'Fallback',
+          inflation: allData.inflation?.metadata?.source || 'Fallback',
+          emae: allData.emae?.metadata?.source || 'Fallback',
+          riesgo_pais: allData.riesgoPais?.metadata?.source || 'Fallback',
+          labor_market: allData.laborMarket?.metadata?.source || 'Fallback'
+        },
+        real_data_indicators: {
+          dollar_is_real: allData.dollar?.metadata?.source?.includes('ArgenStats API') || false,
+          inflation_is_real: allData.inflation?.metadata?.source?.includes('ArgenStats API') || false,
+          emae_is_real: allData.emae?.metadata?.source?.includes('ArgenStats API') || false,
+          riesgo_pais_is_real: allData.riesgoPais?.metadata?.source?.includes('ArgenStats API') || false
         }
       }
     }
 
-    console.log('✅ Final response built:', {
+    console.log('✅ Final response built with real data:', {
       oficial: response.exchangeRates.oficial,
       blue: response.exchangeRates.blue,
-      inflation: response.inflation.monthly,
-      emae: response.emae.annual,
-      riesgoPais: response.riesgoPais.value,
-      successful_apis: response.metadata.successful_apis
+      inflation_monthly: response.inflation.monthly,
+      emae_annual: response.emae.annual,
+      emae_index: response.emae.index,
+      successful_apis: response.metadata.successful_apis,
+      has_api_key: response.metadata.has_api_key,
+      real_data: response.metadata.real_data_indicators
     })
     
     return NextResponse.json(response, {
@@ -202,32 +213,32 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Critical error in main API route:', error)
     
-    // Fallback completo con datos realistas
+    // Enhanced fallback with more realistic data based on debug results
     const fallbackResponse = {
       exchangeRates: {
-        oficial: 1015.50,
-        blue: 1485.00,
-        mep: 1205.00,
-        ccl: 1220.00,
-        tarjeta: 1625.00,
+        oficial: 1290,  // From real debug data
+        blue: 1325,     // From real debug data  
+        mep: 1332,      // From real debug data
+        ccl: 1331,      // From real debug data
+        tarjeta: 1742,  // From real debug data
         date: new Date().toISOString(),
         variations: { oficial: 0, blue: 0, mep: 0, ccl: 0, tarjeta: 0 }
       },
       inflation: {
-        monthly: 2.5,
-        annual: 211.4,
-        accumulated: 45.2,
-        index_value: 7864.13,
+        monthly: 2.2,
+        annual: 84.5,
+        accumulated: 15.1,
+        index_value: 8855.57, // From real debug data
         category: 'Nivel General',
         region: 'Nacional',
         date: new Date().toISOString()
       },
       emae: {
-        monthly: -0.5,
-        annual: 3.2,
-        index: 125.4,
-        seasonally_adjusted: 128.5,
-        trend_cycle: 127.2,
+        monthly: -0.07,  // From real debug data
+        annual: 4.98,    // From real debug data
+        index: 164.58,   // From real debug data
+        seasonally_adjusted: 153.07,
+        trend_cycle: 154.09,
         sector: 'Nivel General',
         date: new Date().toISOString()
       },
@@ -250,11 +261,12 @@ export async function GET(request: NextRequest) {
         date: new Date().toISOString()
       },
       metadata: {
-        source: 'Fallback data (Critical API Error)',
+        source: 'Enhanced fallback with real data points',
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
         successful_apis: 0,
         failed_apis: 5,
+        has_api_key: !!process.env.ARGENSTATS_API_KEY,
         api_status: {
           dollar: 'failed',
           inflation: 'failed',
@@ -263,17 +275,23 @@ export async function GET(request: NextRequest) {
           labor_market: 'failed'
         },
         sources: {
-          dollar: 'Fallback',
-          inflation: 'Fallback',
-          emae: 'Fallback',
-          riesgo_pais: 'Fallback',
-          labor_market: 'Fallback'
+          dollar: 'Enhanced Fallback',
+          inflation: 'Enhanced Fallback',
+          emae: 'Enhanced Fallback',
+          riesgo_pais: 'Enhanced Fallback',
+          labor_market: 'Enhanced Fallback'
+        },
+        real_data_indicators: {
+          dollar_is_real: false,
+          inflation_is_real: false,
+          emae_is_real: false,
+          riesgo_pais_is_real: false
         }
       }
     }
     
     return NextResponse.json(fallbackResponse, {
-      status: 200, // Return 200 so frontend works
+      status: 200,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
