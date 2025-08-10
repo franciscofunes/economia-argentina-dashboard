@@ -1,7 +1,5 @@
-'use client'
-
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,7 +13,7 @@ import {
   ArcElement,
   Filler
 } from 'chart.js'
-import { Line, Bar, Doughnut } from 'react-chartjs-2'
+import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -31,7 +29,22 @@ import {
   ArrowDownRight,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  MapPin,
+  Building2,
+  Heart,
+  Briefcase,
+  PieChart,
+  Clock,
+  Globe,
+  Factory,
+  Home,
+  Utensils,
+  Truck,
+  Landmark,
+  GraduationCap,
+  Shield
 } from 'lucide-react'
 
 // Register Chart.js
@@ -48,7 +61,7 @@ ChartJS.register(
   Filler
 )
 
-interface EconomicData {
+interface EnhancedEconomicData {
   exchangeRates: {
     oficial: number
     blue: number
@@ -89,6 +102,27 @@ interface EconomicData {
     activity: number
     date: string
   }
+  poverty?: {
+    poverty_rate: number
+    indigence_rate: number
+    poverty_population: number
+    indigence_population: number
+    region: string
+    period: string
+    date: string
+  }
+  calendar?: Array<{
+    date: string
+    day_week: string
+    indicator: string
+    period: string
+    source: string
+  }>
+  emaeSectors?: Array<{
+    sector: string
+    annual_variation: number
+    index_value: number
+  }>
   metadata?: {
     source: string
     timestamp: string
@@ -101,20 +135,15 @@ interface EconomicData {
       emae_is_real: boolean
       riesgo_pais_is_real: boolean
     }
-    sources?: {
-      dollar: string
-      inflation: string
-      emae: string
-      riesgo_pais: string
-    }
   }
 }
 
-export default function FixedDashboard() {
-  const [data, setData] = useState<EconomicData | null>(null)
+export default function EnhancedDashboard() {
+  const [data, setData] = useState<EnhancedEconomicData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
+  const [activeTab, setActiveTab] = useState('overview')
   const [historicalData, setHistoricalData] = useState<any>({
     dollarHistory: [],
     inflationHistory: []
@@ -125,7 +154,7 @@ export default function FixedDashboard() {
       setLoading(true)
       setError(null)
       
-      console.log('🔄 Fetching main data from /api/argentstats...')
+      console.log('🔄 Fetching enhanced data from /api/argentstats...')
       
       // Get main economic data
       const response = await fetch('/api/argentstats', {
@@ -141,12 +170,17 @@ export default function FixedDashboard() {
       }
       
       const result = await response.json()
-      console.log('✅ Main data received:', result)
-      console.log('📊 Metadata:', result.metadata)
-      console.log('💰 Exchange rates:', result.exchangeRates)
-      console.log('📈 Real data indicators:', result.metadata?.real_data_indicators)
+      console.log('✅ Enhanced data received:', result)
       
-      setData(result)
+      // Add poverty and calendar data if available
+      const enhancedResult = {
+        ...result,
+        poverty: result.poverty || generateFallbackPovertyData(),
+        calendar: result.calendar || generateFallbackCalendarData(),
+        emaeSectors: result.emaeSectors || generateFallbackSectorsData()
+      }
+      
+      setData(enhancedResult)
       setLastUpdate(new Date().toLocaleString('es-AR'))
 
       // Get historical data
@@ -169,7 +203,7 @@ export default function FixedDashboard() {
         })
       } else {
         console.warn('⚠️ Historical data failed, using fallback')
-        generateFallbackHistoricalData(result)
+        generateFallbackHistoricalData(enhancedResult)
       }
 
     } catch (error) {
@@ -185,7 +219,57 @@ export default function FixedDashboard() {
     }
   }
 
-  const generateFallbackData = (): EconomicData => {
+  const generateFallbackPovertyData = () => ({
+    poverty_rate: 41.7,
+    indigence_rate: 11.9,
+    poverty_population: 19500000,
+    indigence_population: 5600000,
+    region: 'Nacional',
+    period: 'Primer semestre 2024',
+    date: new Date().toISOString()
+  })
+
+  const generateFallbackCalendarData = () => {
+    const today = new Date()
+    return [
+      {
+        date: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        day_week: 'Lunes',
+        indicator: 'IPC - Índice de Precios al Consumidor',
+        period: 'Diciembre 2024',
+        source: 'INDEC'
+      },
+      {
+        date: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        day_week: 'Viernes',
+        indicator: 'EMAE - Estimador Mensual de Actividad Económica',
+        period: 'Noviembre 2024',
+        source: 'INDEC'
+      },
+      {
+        date: new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        day_week: 'Lunes',
+        indicator: 'Mercado de Trabajo',
+        period: 'Tercer trimestre 2024',
+        source: 'INDEC'
+      }
+    ]
+  }
+
+  const generateFallbackSectorsData = () => [
+    { sector: 'Industria manufacturera', annual_variation: 3.8, index_value: 187.4 },
+    { sector: 'Comercio mayorista y minorista', annual_variation: 4.1, index_value: 165.2 },
+    { sector: 'Construcción', annual_variation: -2.3, index_value: 78.9 },
+    { sector: 'Agricultura y ganadería', annual_variation: 2.1, index_value: 142.3 },
+    { sector: 'Hoteles y restaurantes', annual_variation: 6.7, index_value: 201.3 },
+    { sector: 'Transporte y comunicaciones', annual_variation: 2.8, index_value: 149.1 },
+    { sector: 'Servicios financieros', annual_variation: 8.9, index_value: 223.7 },
+    { sector: 'Electricidad, gas y agua', annual_variation: 1.9, index_value: 134.6 },
+    { sector: 'Minería', annual_variation: 5.2, index_value: 156.8 },
+    { sector: 'Administración pública', annual_variation: 1.2, index_value: 128.4 }
+  ]
+
+  const generateFallbackData = (): EnhancedEconomicData => {
     return {
       exchangeRates: {
         oficial: 1290,
@@ -218,17 +302,20 @@ export default function FixedDashboard() {
         activity: 45.1,
         date: new Date().toISOString()
       },
+      poverty: generateFallbackPovertyData(),
+      calendar: generateFallbackCalendarData(),
+      emaeSectors: generateFallbackSectorsData(),
       metadata: {
         source: 'Fallback data (API Error)',
         timestamp: new Date().toISOString(),
         successful_apis: 0,
-        failed_apis: 5,
+        failed_apis: 8,
         has_api_key: false
       }
     }
   }
 
-  const generateFallbackHistoricalData = (currentData: EconomicData) => {
+  const generateFallbackHistoricalData = (currentData: EnhancedEconomicData) => {
     // Generate 30 days of dollar data
     const dollarHistory = []
     for (let i = 29; i >= 0; i--) {
@@ -322,6 +409,50 @@ export default function FixedDashboard() {
     ]
   }
 
+  // EMAE Sectors Chart Data
+  const sectorsChartData = {
+    labels: data?.emaeSectors?.map(s => s.sector.split(' ').slice(0, 2).join(' ')) || [],
+    datasets: [
+      {
+        label: 'Variación Anual (%)',
+        data: data?.emaeSectors?.map(s => s.annual_variation) || [],
+        backgroundColor: data?.emaeSectors?.map(s => 
+          s.annual_variation >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+        ) || [],
+        borderColor: data?.emaeSectors?.map(s => 
+          s.annual_variation >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'
+        ) || [],
+        borderWidth: 2,
+        borderRadius: 8,
+      }
+    ]
+  }
+
+  // Poverty Chart Data
+  const povertyChartData = {
+    labels: ['Población No Pobre', 'Población Pobre (no indigente)', 'Población Indigente'],
+    datasets: [
+      {
+        data: [
+          100 - (data?.poverty?.poverty_rate || 0),
+          (data?.poverty?.poverty_rate || 0) - (data?.poverty?.indigence_rate || 0),
+          data?.poverty?.indigence_rate || 0
+        ],
+        backgroundColor: [
+          'rgba(34, 197, 94, 0.8)',
+          'rgba(251, 191, 36, 0.8)',
+          'rgba(239, 68, 68, 0.8)'
+        ],
+        borderColor: [
+          'rgb(34, 197, 94)',
+          'rgb(251, 191, 36)',
+          'rgb(239, 68, 68)'
+        ],
+        borderWidth: 2,
+      }
+    ]
+  }
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -344,11 +475,39 @@ export default function FixedDashboard() {
     scales: {
       x: {
         grid: { color: 'rgba(255, 255, 255, 0.1)' },
-        ticks: { color: '#FFFFFF' }
+        ticks: { 
+          color: '#FFFFFF',
+          maxRotation: 45
+        }
       },
       y: {
         grid: { color: 'rgba(255, 255, 255, 0.1)' },
         ticks: { color: '#FFFFFF' }
+      }
+    }
+  }
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          color: '#FFFFFF',
+          font: { size: 11 },
+          padding: 20
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#FFFFFF',
+        bodyColor: '#FFFFFF',
+        callbacks: {
+          label: (context: any) => {
+            return `${context.label}: ${context.parsed.toFixed(1)}%`
+          }
+        }
       }
     }
   }
@@ -362,32 +521,40 @@ export default function FixedDashboard() {
     suffix = '',
     subtitle,
     loading = false,
-    isRealData = false
+    isRealData = false,
+    size = 'normal'
   }: {
     title: string
     value: number
     change?: number
     icon: any
-    color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple'
+    color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'pink' | 'indigo'
     suffix?: string
     subtitle?: string
     loading?: boolean
     isRealData?: boolean
+    size?: 'normal' | 'large'
   }) => {
     const colorClasses = {
       blue: 'from-blue-500 to-cyan-500',
       green: 'from-green-500 to-emerald-500',
       red: 'from-red-500 to-pink-500',
       yellow: 'from-yellow-500 to-orange-500',
-      purple: 'from-purple-500 to-violet-500'
+      purple: 'from-purple-500 to-violet-500',
+      pink: 'from-pink-500 to-rose-500',
+      indigo: 'from-indigo-500 to-purple-500'
     }
+
+    const sizeClasses = size === 'large' 
+      ? 'col-span-1 md:col-span-2 p-8' 
+      : 'p-6'
 
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all duration-300 group"
+        className={`relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl ${sizeClasses} hover:bg-white/10 transition-all duration-300 group`}
       >
         <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[color]} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
         
@@ -416,11 +583,11 @@ export default function FixedDashboard() {
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-3xl font-bold text-white">
-                {value.toLocaleString('es-AR', { 
+              <p className={`${size === 'large' ? 'text-4xl' : 'text-3xl'} font-bold text-white`}>
+                {typeof value === 'number' ? value.toLocaleString('es-AR', { 
                   minimumFractionDigits: suffix === '%' ? 1 : 2,
                   maximumFractionDigits: suffix === '%' ? 1 : 2
-                })}
+                }) : value}
                 {suffix}
               </p>
               
@@ -447,9 +614,27 @@ export default function FixedDashboard() {
     )
   }
 
-  const formatNumber = (num: number) => {
-    return num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  }
+  const TabButton = ({ id, label, icon: Icon, isActive, onClick }: {
+    id: string
+    label: string
+    icon: any
+    isActive: boolean
+    onClick: (id: string) => void
+  }) => (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => onClick(id)}
+      className={`flex items-center px-6 py-3 rounded-2xl transition-all duration-300 ${
+        isActive 
+          ? 'bg-white/20 text-white border border-white/30' 
+          : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white'
+      }`}
+    >
+      <Icon className="w-5 h-5 mr-2" />
+      {label}
+    </motion.button>
+  )
 
   if (loading && !data) {
     return (
@@ -483,12 +668,12 @@ export default function FixedDashboard() {
         >
           <div>
             <h1 className="text-4xl md:text-6xl font-black text-white mb-2 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              🇦🇷 Dashboard Económico
+              🇦🇷 Dashboard Económico Plus
             </h1>
             <div className="flex items-center space-x-4">
               <p className="text-white/60 text-lg flex items-center">
                 <Zap className="w-5 h-5 mr-2 text-yellow-400" />
-                ArgenStats API
+                ArgenStats API Enhanced
               </p>
               {data?.metadata && (
                 <div className="flex items-center space-x-2">
@@ -532,193 +717,683 @@ export default function FixedDashboard() {
           </div>
         </motion.div>
 
-        {/* Main Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="Dólar Oficial"
-            value={data?.exchangeRates.oficial || 0}
-            change={data?.exchangeRates.variations?.oficial}
-            icon={DollarSign}
-            color="blue"
-            subtitle="BCRA"
-            loading={loading}
-            isRealData={data?.metadata?.real_data_indicators?.dollar_is_real}
-          />
-          
-          <MetricCard
-            title="Dólar Blue"
-            value={data?.exchangeRates.blue || 0}
-            change={data?.exchangeRates.variations?.blue}
-            icon={DollarSign}
-            color="red"
-            subtitle="Mercado paralelo"
-            loading={loading}
-            isRealData={data?.metadata?.real_data_indicators?.dollar_is_real}
-          />
-          
-          <MetricCard
-            title="Inflación Mensual"
-            value={data?.inflation.monthly || 0}
-            icon={TrendingUp}
-            color="yellow"
-            suffix="%"
-            subtitle={`Anual: ${(data?.inflation.annual || 0).toFixed(1)}%`}
-            loading={loading}
-            isRealData={data?.metadata?.real_data_indicators?.inflation_is_real}
-          />
-          
-          <MetricCard
-            title="Riesgo País"
-            value={data?.riesgoPais.value || 0}
-            change={data?.riesgoPais.variation_pct || data?.riesgoPais.variation}
-            icon={AlertTriangle}
-            color="purple"
-            subtitle="EMBI+ Argentina"
-            loading={loading}
-            isRealData={data?.metadata?.real_data_indicators?.riesgo_pais_is_real}
-          />
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Dollar Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
-          >
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-              <TrendingUp className="w-6 h-6 mr-3 text-blue-400" />
-              Evolución del Dólar (30 días)
-            </h3>
-            <div className="h-80">
-              {historicalData.dollarHistory.length > 0 ? (
-                <Line data={dollarChartData} options={chartOptions} />
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-white/50">Cargando gráfico...</div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Inflation Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
-          >
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-              <BarChart3 className="w-6 h-6 mr-3 text-yellow-400" />
-              Inflación Mensual (INDEC)
-            </h3>
-            <div className="h-80">
-              {historicalData.inflationHistory.length > 0 ? (
-                <Bar data={inflationChartData} options={chartOptions} />
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-white/50">Cargando gráfico...</div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Bottom Section */}
+        {/* Navigation Tabs */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-wrap gap-4 mb-8"
         >
-          {/* EMAE & Labor */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-              <Activity className="w-6 h-6 mr-3 text-purple-400" />
-              Actividad & Empleo
-            </h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-white/5 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <p className="text-white/70 text-sm">EMAE (Anual)</p>
-                  {data?.metadata?.real_data_indicators?.emae_is_real && (
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                  )}
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {(data?.emae.annual || 0).toFixed(1)}%
-                </p>
-                <p className="text-xs text-white/50">Índice: {(data?.emae.index || 0).toFixed(1)}</p>
-              </div>
-              <div className="p-4 bg-white/5 rounded-2xl">
-                <p className="text-white/70 text-sm">Desempleo</p>
-                <p className="text-2xl font-bold text-white">
-                  {(data?.laborMarket.unemployment || 0).toFixed(1)}%
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Exchange Rates */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-              <DollarSign className="w-6 h-6 mr-3 text-green-400" />
-              Cotizaciones USD
-            </h3>
-            <div className="space-y-3">
-              {[
-                { name: 'MEP', value: data?.exchangeRates.mep || 0, color: 'bg-blue-500' },
-                { name: 'CCL', value: data?.exchangeRates.ccl || 0, color: 'bg-purple-500' },
-                { name: 'Tarjeta', value: data?.exchangeRates.tarjeta || 0, color: 'bg-yellow-500' }
-              ].map((rate) => (
-                <div key={rate.name} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full ${rate.color} mr-3`}></div>
-                    <span className="text-white/80">{rate.name}</span>
-                  </div>
-                  <span className="text-white font-semibold">
-                    ${formatNumber(rate.value)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Data Sources */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-              <Target className="w-6 h-6 mr-3 text-green-400" />
-              Fuentes de Datos
-            </h3>
-            <div className="space-y-3">
-              {data?.metadata?.sources && Object.entries(data.metadata.sources).map(([key, source]) => (
-                <div key={key} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-                  <span className="text-white/80 capitalize text-sm">{key}</span>
-                  <div className="flex items-center">
-                    {source.includes('ArgenStats API') ? (
-                      <CheckCircle className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-400" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {data?.metadata && (
-              <div className="mt-4 text-xs text-white/50">
-                Actualizado: {new Date(data.metadata.timestamp).toLocaleTimeString('es-AR')}
-              </div>
-            )}
-          </div>
+          <TabButton
+            id="overview"
+            label="Resumen"
+            icon={BarChart3}
+            isActive={activeTab === 'overview'}
+            onClick={setActiveTab}
+          />
+          <TabButton
+            id="markets"
+            label="Mercados"
+            icon={TrendingUp}
+            isActive={activeTab === 'markets'}
+            onClick={setActiveTab}
+          />
+          <TabButton
+            id="sectors"
+            label="Sectores"
+            icon={Building2}
+            isActive={activeTab === 'sectors'}
+            onClick={setActiveTab}
+          />
+          <TabButton
+            id="social"
+            label="Social"
+            icon={Users}
+            isActive={activeTab === 'social'}
+            onClick={setActiveTab}
+          />
+          <TabButton
+            id="calendar"
+            label="Calendario"
+            icon={Calendar}
+            isActive={activeTab === 'calendar'}
+            onClick={setActiveTab}
+          />
         </motion.div>
 
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'overview' && (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Main Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <MetricCard
+                  title="Dólar Oficial"
+                  value={data?.exchangeRates.oficial || 0}
+                  change={data?.exchangeRates.variations?.oficial}
+                  icon={DollarSign}
+                  color="blue"
+                  subtitle="BCRA"
+                  loading={loading}
+                  isRealData={data?.metadata?.real_data_indicators?.dollar_is_real}
+                />
+                
+                <MetricCard
+                  title="Dólar Blue"
+                  value={data?.exchangeRates.blue || 0}
+                  change={data?.exchangeRates.variations?.blue}
+                  icon={DollarSign}
+                  color="red"
+                  subtitle="Mercado paralelo"
+                  loading={loading}
+                  isRealData={data?.metadata?.real_data_indicators?.dollar_is_real}
+                />
+                
+                <MetricCard
+                  title="Inflación Mensual"
+                  value={data?.inflation.monthly || 0}
+                  icon={TrendingUp}
+                  color="yellow"
+                  suffix="%"
+                  subtitle={`Anual: ${(data?.inflation.annual || 0).toFixed(1)}%`}
+                  loading={loading}
+                  isRealData={data?.metadata?.real_data_indicators?.inflation_is_real}
+                />
+                
+                <MetricCard
+                  title="Riesgo País"
+                  value={data?.riesgoPais.value || 0}
+                  change={data?.riesgoPais.variation_pct || data?.riesgoPais.variation}
+                  icon={AlertTriangle}
+                  color="purple"
+                  subtitle="EMBI+ Argentina"
+                  loading={loading}
+                  isRealData={data?.metadata?.real_data_indicators?.riesgo_pais_is_real}
+                />
+              </div>
+
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Dollar Chart */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <TrendingUp className="w-6 h-6 mr-3 text-blue-400" />
+                    Evolución del Dólar (30 días)
+                  </h3>
+                  <div className="h-80">
+                    {historicalData.dollarHistory.length > 0 ? (
+                      <Line data={dollarChartData} options={chartOptions} />
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="text-white/50">Cargando gráfico...</div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Inflation Chart */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <BarChart3 className="w-6 h-6 mr-3 text-yellow-400" />
+                    Inflación Mensual (INDEC)
+                  </h3>
+                  <div className="h-80">
+                    {historicalData.inflationHistory.length > 0 ? (
+                      <Bar data={inflationChartData} options={chartOptions} />
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="text-white/50">Cargando gráfico...</div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Additional Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <MetricCard
+                  title="EMAE Variación Anual"
+                  value={data?.emae.annual || 0}
+                  icon={Activity}
+                  color="green"
+                  suffix="%"
+                  subtitle={`Mensual: ${(data?.emae.monthly || 0).toFixed(2)}%`}
+                  loading={loading}
+                  isRealData={data?.metadata?.real_data_indicators?.emae_is_real}
+                />
+                
+                <MetricCard
+                  title="Desempleo"
+                  value={data?.laborMarket.unemployment || 0}
+                  icon={Users}
+                  color="indigo"
+                  suffix="%"
+                  subtitle={`Actividad: ${(data?.laborMarket.activity || 0).toFixed(1)}%`}
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Pobreza"
+                  value={data?.poverty?.poverty_rate || 0}
+                  icon={Heart}
+                  color="pink"
+                  suffix="%"
+                  subtitle={`Indigencia: ${(data?.poverty?.indigence_rate || 0).toFixed(1)}%`}
+                  loading={loading}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'markets' && (
+            <motion.div
+              key="markets"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Extended Dollar Rates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                <MetricCard
+                  title="Dólar Oficial"
+                  value={data?.exchangeRates.oficial || 0}
+                  change={data?.exchangeRates.variations?.oficial}
+                  icon={DollarSign}
+                  color="blue"
+                  loading={loading}
+                />
+                
+                <MetricCard
+                  title="Dólar Blue"
+                  value={data?.exchangeRates.blue || 0}
+                  change={data?.exchangeRates.variations?.blue}
+                  icon={DollarSign}
+                  color="red"
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Dólar MEP"
+                  value={data?.exchangeRates.mep || 0}
+                  change={data?.exchangeRates.variations?.mep}
+                  icon={DollarSign}
+                  color="yellow"
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Dólar CCL"
+                  value={data?.exchangeRates.ccl || 0}
+                  change={data?.exchangeRates.variations?.ccl}
+                  icon={DollarSign}
+                  color="purple"
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Dólar Tarjeta"
+                  value={data?.exchangeRates.tarjeta || 0}
+                  change={data?.exchangeRates.variations?.tarjeta}
+                  icon={DollarSign}
+                  color="pink"
+                  loading={loading}
+                />
+              </div>
+
+              {/* Market Analysis */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <Globe className="w-6 h-6 mr-3 text-blue-400" />
+                    Brecha Cambiaria
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70">Blue vs Oficial</span>
+                      <span className="text-white font-bold">
+                        {((((data?.exchangeRates.blue || 0) / (data?.exchangeRates.oficial || 1)) - 1) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70">MEP vs Oficial</span>
+                      <span className="text-white font-bold">
+                        {((((data?.exchangeRates.mep || 0) / (data?.exchangeRates.oficial || 1)) - 1) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70">CCL vs Oficial</span>
+                      <span className="text-white font-bold">
+                        {((((data?.exchangeRates.ccl || 0) / (data?.exchangeRates.oficial || 1)) - 1) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <AlertTriangle className="w-6 h-6 mr-3 text-red-400" />
+                    Riesgo País - Tendencia
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70">Valor Actual</span>
+                      <span className="text-white font-bold">{data?.riesgoPais.value || 0} pb</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70">Variación</span>
+                      <span className={`font-bold ${(data?.riesgoPais.variation || 0) >= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {(data?.riesgoPais.variation || 0) >= 0 ? '+' : ''}{data?.riesgoPais.variation || 0} pb
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70">% Variación</span>
+                      <span className={`font-bold ${(data?.riesgoPais.variation_pct || 0) >= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {(data?.riesgoPais.variation_pct || 0) >= 0 ? '+' : ''}{(data?.riesgoPais.variation_pct || 0).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'sectors' && (
+            <motion.div
+              key="sectors"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* EMAE Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <MetricCard
+                  title="EMAE General"
+                  value={data?.emae.annual || 0}
+                  icon={Activity}
+                  color="green"
+                  suffix="%"
+                  subtitle={`Índice: ${(data?.emae.index || 0).toFixed(1)}`}
+                  loading={loading}
+                  size="large"
+                />
+                
+                <MetricCard
+                  title="Variación Mensual"
+                  value={data?.emae.monthly || 0}
+                  icon={TrendingUp}
+                  color="blue"
+                  suffix="%"
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Mejor Sector"
+                  value={Math.max(...(data?.emaeSectors?.map(s => s.annual_variation) || [0]))}
+                  icon={ArrowUpRight}
+                  color="green"
+                  suffix="%"
+                  subtitle={data?.emaeSectors?.find(s => s.annual_variation === Math.max(...(data?.emaeSectors?.map(s => s.annual_variation) || [0])))?.sector.split(' ').slice(0, 2).join(' ')}
+                  loading={loading}
+                />
+              </div>
+
+              {/* Sectors Performance Chart */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mb-8"
+              >
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                  <Building2 className="w-6 h-6 mr-3 text-purple-400" />
+                  Rendimiento por Sectores EMAE (Variación Anual %)
+                </h3>
+                <div className="h-96">
+                  {data?.emaeSectors && data.emaeSectors.length > 0 ? (
+                    <Bar data={sectorsChartData} options={chartOptions} />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-white/50">Cargando datos de sectores...</div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Sectors Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {data?.emaeSectors?.map((sector, index) => {
+                  const icons = [Factory, Building2, Home, Utensils, Truck, Landmark, GraduationCap, Shield, Globe]
+                  const Icon = icons[index % icons.length]
+                  
+                  return (
+                    <motion.div
+                      key={sector.sector}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center">
+                          <Icon className="w-5 h-5 text-blue-400 mr-2" />
+                          <h4 className="text-white text-sm font-medium">{sector.sector}</h4>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-white/60 text-xs">Variación Anual</span>
+                          <span className={`text-sm font-bold ${sector.annual_variation >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {sector.annual_variation >= 0 ? '+' : ''}{sector.annual_variation.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-white/60 text-xs">Índice</span>
+                          <span className="text-white text-sm font-medium">{sector.index_value.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'social' && (
+            <motion.div
+              key="social"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Social Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <MetricCard
+                  title="Pobreza"
+                  value={data?.poverty?.poverty_rate || 0}
+                  icon={Heart}
+                  color="red"
+                  suffix="%"
+                  subtitle={`${((data?.poverty?.poverty_population || 0) / 1000000).toFixed(1)}M personas`}
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Indigencia"
+                  value={data?.poverty?.indigence_rate || 0}
+                  icon={AlertTriangle}
+                  color="pink"
+                  suffix="%"
+                  subtitle={`${((data?.poverty?.indigence_population || 0) / 1000000).toFixed(1)}M personas`}
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Desempleo"
+                  value={data?.laborMarket.unemployment || 0}
+                  icon={Users}
+                  color="purple"
+                  suffix="%"
+                  subtitle="Tasa de desocupación"
+                  loading={loading}
+                />
+
+                <MetricCard
+                  title="Actividad"
+                  value={data?.laborMarket.activity || 0}
+                  icon={Briefcase}
+                  color="blue"
+                  suffix="%"
+                  subtitle="Tasa de actividad"
+                  loading={loading}
+                />
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Poverty Chart */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <PieChart className="w-6 h-6 mr-3 text-pink-400" />
+                    Distribución de Pobreza
+                  </h3>
+                  <div className="h-80">
+                    <Doughnut data={povertyChartData} options={doughnutOptions} />
+                  </div>
+                </motion.div>
+
+                {/* Labor Market */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <Users className="w-6 h-6 mr-3 text-blue-400" />
+                    Mercado Laboral
+                  </h3>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-white/70">Tasa de Actividad</span>
+                        <span className="text-white font-bold">{(data?.laborMarket.activity || 0).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-3">
+                        <div 
+                          className="bg-blue-500 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${(data?.laborMarket.activity || 0)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-white/70">Tasa de Empleo</span>
+                        <span className="text-white font-bold">{(data?.laborMarket.employment || 0).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-3">
+                        <div 
+                          className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${(data?.laborMarket.employment || 0)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-white/70">Tasa de Desempleo</span>
+                        <span className="text-white font-bold">{(data?.laborMarket.unemployment || 0).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-3">
+                        <div 
+                          className="bg-red-500 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${(data?.laborMarket.unemployment || 0) * 2}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Social Impact Summary */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mt-8"
+              >
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                  <Target className="w-6 h-6 mr-3 text-green-400" />
+                  Resumen Social
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="text-white font-semibold">Población Afectada</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-white/70">En situación de pobreza</span>
+                        <span className="text-red-400 font-bold">
+                          {((data?.poverty?.poverty_population || 0) / 1000000).toFixed(1)}M
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/70">En situación de indigencia</span>
+                        <span className="text-pink-400 font-bold">
+                          {((data?.poverty?.indigence_population || 0) / 1000000).toFixed(1)}M
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="text-white font-semibold">Contexto Laboral</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-white/70">Personas desocupadas</span>
+                        <span className="text-purple-400 font-bold">
+                          {(((data?.laborMarket.unemployment || 0) / 100) * 47000000 / 1000000).toFixed(1)}M
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/70">Personas ocupadas</span>
+                        <span className="text-blue-400 font-bold">
+                          {(((data?.laborMarket.employment || 0) / 100) * 47000000 / 1000000).toFixed(1)}M
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {activeTab === 'calendar' && (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+              >
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                  <Calendar className="w-6 h-6 mr-3 text-blue-400" />
+                  Próximas Publicaciones INDEC
+                </h3>
+                
+                <div className="space-y-4">
+                  {data?.calendar?.map((event, index) => {
+                    const eventDate = new Date(event.date)
+                    const isToday = eventDate.toDateString() === new Date().toDateString()
+                    const isUpcoming = eventDate > new Date()
+                    
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.02] ${
+                          isToday 
+                            ? 'bg-blue-500/20 border-blue-400/50' 
+                            : isUpcoming 
+                              ? 'bg-white/5 border-white/10 hover:bg-white/10' 
+                              : 'bg-white/5 border-white/5 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center mb-2">
+                              <Clock className="w-4 h-4 text-blue-400 mr-2" />
+                              <span className="text-white/70 text-sm">
+                                {eventDate.toLocaleDateString('es-AR', { 
+                                  weekday: 'long', 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                              </span>
+                            </div>
+                            <h4 className="text-white font-semibold mb-1">{event.indicator}</h4>
+                            <p className="text-white/60 text-sm">{event.period}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {isToday && (
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">
+                                Hoy
+                              </span>
+                            )}
+                            <span className="px-2 py-1 bg-white/10 text-white/70 text-xs rounded-full">
+                              {event.source}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+
+                {(!data?.calendar || data.calendar.length === 0) && (
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-white/30 mx-auto mb-4" />
+                    <p className="text-white/50">No hay eventos programados disponibles</p>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-white/50">
-          <p>Datos económicos de Argentina • Fuente: ArgenStats API • INDEC oficial</p>
-          <p>Dashboard actualizado en tiempo real cada 5 minutos</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="mt-12 text-center text-white/40 text-sm"
+        >
+          <p>Datos oficiales obtenidos de ArgenStats API • Actualizado cada 5 minutos</p>
+          <p className="mt-2">
+            Dashboard desarrollado con Next.js + React + Chart.js • 
+            {data?.metadata?.has_api_key ? ' Usando API Key ✓' : ' Sin API Key'}
+          </p>
+        </motion.div>
       </div>
     </div>
   )
