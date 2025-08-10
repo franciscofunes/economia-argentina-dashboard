@@ -1422,4 +1422,6 @@ export default function EnhancedDashboard() {
       </div>
     </div>
   )
-                  }
+                  
+  }
+}
