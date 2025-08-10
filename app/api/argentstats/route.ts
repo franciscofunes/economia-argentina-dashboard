@@ -61,6 +61,104 @@ function transformDollarHistory(apiData: any[]): DollarHistoryPoint[] {
     }))
 }
 
+// Enhanced fallback generator using current real rates
+function generateEnhancedDollarFallback(days: number): DollarHistoryPoint[] {
+  console.log('🔄 Generating enhanced dollar fallback data...')
+  
+  // Use more realistic current rates based on debug data
+  const currentRates = {
+    oficial: 1290, // From real ArgenStats data
+    blue: 1325,    // From real ArgenStats data
+    mep: 1332,     // From real ArgenStats data
+    ccl: 1331      // From real ArgenStats data
+  }
+  
+  const dollarHistory: DollarHistoryPoint[] = []
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date()
+    date.setDate(date.getDate() - i)
+    
+    // Create realistic historical progression
+    const daysAgo = i
+    const trendFactor = daysAgo * 0.3 // Gradual increase over time
+    
+    // Add realistic daily volatility
+    const oficialVariation = (Math.random() - 0.5) * 15
+    const blueVariation = (Math.random() - 0.5) * 25
+    const mepVariation = (Math.random() - 0.5) * 20
+    const cclVariation = (Math.random() - 0.5) * 20
+    
+    // Calculate historical values with downward trend (values were lower in the past)
+    const oficial = Math.max(currentRates.oficial - trendFactor + oficialVariation, 1000)
+    const blue = Math.max(currentRates.blue - trendFactor * 1.1 + blueVariation, oficial * 1.1)
+    const mep = Math.max(currentRates.mep - trendFactor + mepVariation, oficial * 1.05)
+    const ccl = Math.max(currentRates.ccl - trendFactor + cclVariation, oficial * 1.05)
+    
+    dollarHistory.push({
+      date: date.toISOString().split('T')[0],
+      oficial: Math.round(oficial * 100) / 100,
+      blue: Math.round(blue * 100) / 100,
+      mep: Math.round(mep * 100) / 100,
+      ccl: Math.round(ccl * 100) / 100
+    })
+  }
+  
+  console.log('🔄 Generated', dollarHistory.length, 'enhanced dollar data points')
+  return dollarHistory
+}
+
+// Real inflation historical data from INDEC
+function getRealInflationHistory(months: number): InflationHistoryPoint[] {
+  console.log('📊 Using real INDEC inflation data...')
+  
+  // Extended real historical data from INDEC
+  const realInflationData = [
+    // 2023 data
+    { month: 'Ene 23', value: 6.0, date: '2023-01-31' },
+    { month: 'Feb 23', value: 6.6, date: '2023-02-28' },
+    { month: 'Mar 23', value: 7.7, date: '2023-03-31' },
+    { month: 'Abr 23', value: 8.4, date: '2023-04-30' },
+    { month: 'May 23', value: 7.8, date: '2023-05-31' },
+    { month: 'Jun 23', value: 6.0, date: '2023-06-30' },
+    { month: 'Jul 23', value: 6.3, date: '2023-07-31' },
+    { month: 'Ago 23', value: 12.4, date: '2023-08-31' },
+    { month: 'Sep 23', value: 12.7, date: '2023-09-30' },
+    { month: 'Oct 23', value: 8.3, date: '2023-10-31' },
+    { month: 'Nov 23', value: 12.8, date: '2023-11-30' },
+    { month: 'Dic 23', value: 25.5, date: '2023-12-31' },
+    
+    // 2024 data
+    { month: 'Ene 24', value: 20.6, date: '2024-01-31' },
+    { month: 'Feb 24', value: 13.2, date: '2024-02-29' },
+    { month: 'Mar 24', value: 11.0, date: '2024-03-31' },
+    { month: 'Abr 24', value: 8.8, date: '2024-04-30' },
+    { month: 'May 24', value: 4.2, date: '2024-05-31' },
+    { month: 'Jun 24', value: 4.6, date: '2024-06-30' },
+    { month: 'Jul 24', value: 4.0, date: '2024-07-31' },
+    { month: 'Ago 24', value: 4.2, date: '2024-08-31' },
+    { month: 'Sep 24', value: 3.5, date: '2024-09-30' },
+    { month: 'Oct 24', value: 2.7, date: '2024-10-31' },
+    { month: 'Nov 24', value: 2.4, date: '2024-11-30' },
+    { month: 'Dic 24', value: 2.5, date: '2024-12-31' },
+    
+    // 2025 data (projected/current)
+    { month: 'Ene 25', value: 2.2, date: '2025-01-31' },
+    { month: 'Feb 25', value: 2.0, date: '2025-02-28' },
+    { month: 'Mar 25', value: 1.9, date: '2025-03-31' },
+    { month: 'Abr 25', value: 1.8, date: '2025-04-30' },
+    { month: 'May 25', value: 1.6, date: '2025-05-31' },
+    { month: 'Jun 25', value: 1.6, date: '2025-06-30' },
+    { month: 'Jul 25', value: 1.5, date: '2025-07-31' },
+    { month: 'Ago 25', value: 1.4, date: '2025-08-31' }
+  ]
+  
+  const selectedData = realInflationData.slice(-months)
+  console.log('📊 Selected', selectedData.length, 'months of real inflation data')
+  
+  return selectedData
+}
+
 export async function GET(request: NextRequest) {
   console.log('📈 Enhanced Historical Data API Route - Starting...')
   
@@ -88,6 +186,7 @@ export async function GET(request: NextRequest) {
         if (dollarData.data && Array.isArray(dollarData.data)) {
           dollarHistory = transformDollarHistory(dollarData.data)
         } else {
+          // Handle case where data is not in expected format
           dollarHistory = []
         }
         
@@ -205,104 +304,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Enhanced fallback generator using current real rates
-function generateEnhancedDollarFallback(days: number): DollarHistoryPoint[] {
-  console.log('🔄 Generating enhanced dollar fallback data...')
-  
-  // Use more realistic current rates based on debug data
-  const currentRates = {
-    oficial: 1290, // From real ArgenStats data
-    blue: 1325,    // From real ArgenStats data
-    mep: 1332,     // From real ArgenStats data
-    ccl: 1331      // From real ArgenStats data
-  }
-  
-  const dollarHistory: DollarHistoryPoint[] = []
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    
-    // Create realistic historical progression
-    const daysAgo = i
-    const trendFactor = daysAgo * 0.3 // Gradual increase over time
-    
-    // Add realistic daily volatility
-    const oficialVariation = (Math.random() - 0.5) * 15
-    const blueVariation = (Math.random() - 0.5) * 25
-    const mepVariation = (Math.random() - 0.5) * 20
-    const cclVariation = (Math.random() - 0.5) * 20
-    
-    // Calculate historical values with downward trend (values were lower in the past)
-    const oficial = Math.max(currentRates.oficial - trendFactor + oficialVariation, 1000)
-    const blue = Math.max(currentRates.blue - trendFactor * 1.1 + blueVariation, oficial * 1.1)
-    const mep = Math.max(currentRates.mep - trendFactor + mepVariation, oficial * 1.05)
-    const ccl = Math.max(currentRates.ccl - trendFactor + cclVariation, oficial * 1.05)
-    
-    dollarHistory.push({
-      date: date.toISOString().split('T')[0],
-      oficial: Math.round(oficial * 100) / 100,
-      blue: Math.round(blue * 100) / 100,
-      mep: Math.round(mep * 100) / 100,
-      ccl: Math.round(ccl * 100) / 100
-    })
-  }
-  
-  console.log('🔄 Generated', dollarHistory.length, 'enhanced dollar data points')
-  return dollarHistory
-}
-
-// Real inflation historical data from INDEC
-function getRealInflationHistory(months: number): InflationHistoryPoint[] {
-  console.log('📊 Using real INDEC inflation data...')
-  
-  // Extended real historical data from INDEC
-  const realInflationData = [
-    // 2023 data
-    { month: 'Ene 23', value: 6.0, date: '2023-01-31' },
-    { month: 'Feb 23', value: 6.6, date: '2023-02-28' },
-    { month: 'Mar 23', value: 7.7, date: '2023-03-31' },
-    { month: 'Abr 23', value: 8.4, date: '2023-04-30' },
-    { month: 'May 23', value: 7.8, date: '2023-05-31' },
-    { month: 'Jun 23', value: 6.0, date: '2023-06-30' },
-    { month: 'Jul 23', value: 6.3, date: '2023-07-31' },
-    { month: 'Ago 23', value: 12.4, date: '2023-08-31' },
-    { month: 'Sep 23', value: 12.7, date: '2023-09-30' },
-    { month: 'Oct 23', value: 8.3, date: '2023-10-31' },
-    { month: 'Nov 23', value: 12.8, date: '2023-11-30' },
-    { month: 'Dic 23', value: 25.5, date: '2023-12-31' },
-    
-    // 2024 data
-    { month: 'Ene 24', value: 20.6, date: '2024-01-31' },
-    { month: 'Feb 24', value: 13.2, date: '2024-02-29' },
-    { month: 'Mar 24', value: 11.0, date: '2024-03-31' },
-    { month: 'Abr 24', value: 8.8, date: '2024-04-30' },
-    { month: 'May 24', value: 4.2, date: '2024-05-31' },
-    { month: 'Jun 24', value: 4.6, date: '2024-06-30' },
-    { month: 'Jul 24', value: 4.0, date: '2024-07-31' },
-    { month: 'Ago 24', value: 4.2, date: '2024-08-31' },
-    { month: 'Sep 24', value: 3.5, date: '2024-09-30' },
-    { month: 'Oct 24', value: 2.7, date: '2024-10-31' },
-    { month: 'Nov 24', value: 2.4, date: '2024-11-30' },
-    { month: 'Dic 24', value: 2.5, date: '2024-12-31' },
-    
-    // 2025 data (projected/current)
-    { month: 'Ene 25', value: 2.2, date: '2025-01-31' },
-    { month: 'Feb 25', value: 2.0, date: '2025-02-28' },
-    { month: 'Mar 25', value: 1.9, date: '2025-03-31' },
-    { month: 'Abr 25', value: 1.8, date: '2025-04-30' },
-    { month: 'May 25', value: 1.6, date: '2025-05-31' },
-    { month: 'Jun 25', value: 1.6, date: '2025-06-30' },
-    { month: 'Jul 25', value: 1.5, date: '2025-07-31' },
-    { month: 'Ago 25', value: 1.4, date: '2025-08-31' }
-  ]
-  
-  const selectedData = realInflationData.slice(-months)
-  console.log('📊 Selected', selectedData.length, 'months of real inflation data')
-  
-  return selectedData
-}
-
 // Handle other HTTP methods
 export async function POST() {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
@@ -314,4 +315,4 @@ export async function PUT() {
 
 export async function DELETE() {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
-          }
+}
