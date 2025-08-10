@@ -632,16 +632,70 @@ export default function EnhancedDashboard() {
       : 'p-6'
 
     return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden">
-        <div className="absolute -inset-10 opacity-20">
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-          <div className="absolute top-0 right-1/4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
-          <div className="absolute bottom-0 left-1/3 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className={`relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl ${sizeClasses} hover:bg-white/10 transition-all duration-300 group`}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[color]} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <h3 className="text-white/70 text-sm font-medium">{title}</h3>
+            {isRealData && (
+              <div className="ml-2 relative group">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Datos reales de ArgenStats
+                </div>
+              </div>
+            )}
+          </div>
+          <div className={`p-3 rounded-2xl bg-gradient-to-br ${colorClasses[color]} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
         </div>
+        
+        {loading ? (
+          <div className="space-y-2">
+            <div className="h-8 w-24 bg-white/10 rounded animate-pulse"></div>
+            <div className="h-4 w-16 bg-white/10 rounded animate-pulse"></div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className={`${size === 'large' ? 'text-4xl' : 'text-3xl'} font-bold text-white`}>
+              {typeof value === 'number' ? value.toLocaleString('es-AR', { 
+                minimumFractionDigits: suffix === '%' ? 1 : 2,
+                maximumFractionDigits: suffix === '%' ? 1 : 2
+              }) : value}
+              {suffix}
+            </p>
+            
+            {change !== undefined && change !== 0 && (
+              <div className={`flex items-center text-sm ${
+                change >= 0 ? 'text-emerald-300' : 'text-red-300'
+              }`}>
+                {change >= 0 ? (
+                  <ArrowUpRight className="w-4 h-4 mr-1" />
+                ) : (
+                  <ArrowDownRight className="w-4 h-4 mr-1" />
+                )}
+                <span>{Math.abs(change).toFixed(1)}%</span>
+              </div>
+            )}
+            
+            {subtitle && (
+              <p className="text-xs text-white/50">{subtitle}</p>
+            )}
+          </div>
+        )}
       </div>
-
+    </motion.div>
+  )
+  }
+    
       <div className="relative z-10 p-4 md:p-8">
         {/* Header */}
         <motion.div 
